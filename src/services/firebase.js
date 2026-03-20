@@ -1,5 +1,8 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { 
+  getFirestore, collection, addDoc, serverTimestamp, 
+  query, orderBy, limit, getDocs 
+} from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -22,6 +25,17 @@ export async function saveDocument(data, role) {
     });
   } catch (err) {
     console.log("Firestore save failed:", err.message);
+  }
+}
+
+export async function getRecentDocuments(max = 20) {
+  try {
+    const q = query(collection(db, "documents"), orderBy("timestamp", "desc"), limit(max));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (err) {
+    console.error("Fetch failed:", err);
+    return [];
   }
 }
 

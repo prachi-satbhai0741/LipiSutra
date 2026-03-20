@@ -1,31 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;600;800&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-heading: 'Cinzel', serif;
+  --font-heading: 'Playfair Display', serif;
   --font-sans: 'Inter', sans-serif;
   
-  /* Restored Original Brown Theme */
-  --color-museum-900: #1a120b;
-  --color-museum-800: #2c1e16;
-  --color-museum-700: #422d20;
+  /* Deepened Original Brown Theme */
+  --color-museum-900: #140c05;
+  --color-museum-800: #1a120b;
+  --color-museum-700: #2c1e16;
 
-  /* Restored Original Gold Accents */
-  --color-gold-400: #FCD34D;
-  --color-gold-500: #D4AF37;
+  /* Refined Gold Accents */
+  --color-gold-400: #E5C366;
+  --color-gold-500: #C9A84C;
   --color-gold-600: #8B6914;
   --color-gold-900: #4A3B12;
   
-  /* Mapped Slate to Original Cream/Gold Text */
+  /* Mapped Slate to Cream/Gold Text */
   --color-slate-200: #f5e6c8;
   --color-slate-300: #e5d5b5;
-  --color-slate-400: #c9a96e;
+  --color-slate-400: #C9A84C;
   --color-slate-500: #a38753;
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
 }
 
 @layer base {
   body {
     background-color: var(--color-museum-900);
-    background-image: radial-gradient(circle at top right, rgba(212, 175, 55, 0.1), #1a120b 60%);
+    background-image: 
+      /* Dark Overlay */
+      linear-gradient(rgba(20, 12, 5, 0.75), rgba(20, 12, 5, 0.75)),
+      /* Parchment Texture Noise */
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E"),
+      /* Main Background Image */
+      url("./assets/back.jpg");
+    background-size: cover;
+    background-position: center;
     background-attachment: fixed;
     color: var(--color-slate-200);
     -webkit-font-smoothing: antialiased;
@@ -33,11 +51,27 @@
   }
   
   ::selection {
-    background-color: rgba(212, 175, 55, 0.3);
+    background-color: rgba(201, 168, 76, 0.3);
+  }
+
+  h1, h2, h3, h4, .font-heading {
+    color: #C9A84C;
   }
 }
 
-/* Custom Scrollbar for elegant feel */
+/* Semi-transparent Glassmorphism Cards */
+.glass-card {
+  background: rgba(26, 18, 11, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+}
+
+.glass-card:hover {
+  border-color: rgba(201, 168, 76, 0.3);
+  background: rgba(26, 18, 11, 0.7);
+}
+
+/* Custom Scrollbar */
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: var(--color-museum-900); }
 ::-webkit-scrollbar-thumb { background: var(--color-gold-900); border-radius: 4px; border: 1px solid var(--color-gold-600); }

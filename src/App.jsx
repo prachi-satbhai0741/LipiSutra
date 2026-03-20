@@ -3,19 +3,26 @@ import Navbar from "./components/Navbar";
 import PublicView from "./components/PublicView";
 import HistorianView from "./components/HistorianView";
 import MuseumView from "./components/MuseumView";
-import "./App.css";
+import ArchivesView from "./components/ArchivesView";
 
 export default function App() {
-  const [currentRole, setCurrentRole] = useState("Public / Student");
+  const [view, setView] = useState("public"); // "public", "historian", "museum"
+  const [page, setPage] = useState("home"); // "home", "archives"
 
   return (
-    <div>
-      <Navbar currentRole={currentRole} setCurrentRole={setCurrentRole} />
-      <div style={{ maxWidth: 920, margin: "0 auto", padding: "0 20px 40px" }}>
-        {currentRole === "Public / Student" && <PublicView />}
-        {currentRole === "Historian"        && <HistorianView />}
-        {currentRole === "Museum Admin"     && <MuseumView />}
-      </div>
+    <div className="min-h-screen relative flex flex-col font-sans">
+      <Navbar currentView={view} onViewChange={setView} currentPage={page} onPageChange={setPage} />
+      <main className="flex-1 overflow-x-hidden relative z-10 w-full animate-[fadeIn_0.5s_ease-out]">
+         {page === "archives" ? (
+            <ArchivesView />
+         ) : (
+            <>
+               {view === "public" && <PublicView />}
+               {view === "historian" && <HistorianView />}
+               {view === "museum" && <MuseumView />}
+            </>
+         )}
+      </main>
     </div>
   );
 }
