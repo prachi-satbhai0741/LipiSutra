@@ -4,11 +4,6 @@ import { getConfidenceScores } from "../services/vision";
 import { saveDocument, saveCorrection } from "../services/firebase";
 import ResultCard from "./ResultCard";
 
-const box = (border = "#8B6914") => ({
-  background: "#2a1800", borderRadius: 12, padding: 24,
-  marginBottom: 20, border: `1px solid ${border}`
-});
-
 export default function HistorianView() {
   const [image, setImage] = useState(null);
   const [base64, setBase64] = useState(null);
@@ -48,104 +43,136 @@ export default function HistorianView() {
     setSaved(true);
   }
 
-  // Confidence heatmap
   function Heatmap() {
     if (!words.length) return null;
     return (
-      <div style={{ lineHeight: 2.4, fontSize: 17, marginTop: 12 }}>
-        {words.map((w, i) => {
-          const c = w.confidence;
-          const bg = c > 0.85 ? "transparent" : c > 0.6 ? "#FEF9C3" : "#FEE2E2";
-          const color = c > 0.85 ? "#f5e6c8" : c > 0.6 ? "#5a3e00" : "#7c0000";
-          const border = c <= 0.6 ? "1px dashed #EF4444" : "none";
-          return (
-            <span key={i} title={`${Math.round(c * 100)}% confidence`}
-              style={{ background: bg, color, padding: "2px 5px", borderRadius: 4,
-                margin: "0 2px", border, cursor: c <= 0.6 ? "pointer" : "default" }}>
-              {w.word}
-            </span>
-          );
-        })}
-        <div style={{ marginTop: 12, fontSize: 12, color: "#c9a96e" }}>
-          <span style={{ background: "#FEF9C3", color: "#5a3e00", padding: "2px 8px", borderRadius: 4, marginRight: 8 }}>Yellow = Uncertain (60–85%)</span>
-          <span style={{ background: "#FEE2E2", color: "#7c0000", padding: "2px 8px", borderRadius: 4 }}>Red = AI Predicted (&lt;60%) — edit below</span>
+      <div className="leading-loose text-lg mt-6">
+        <div className="flex flex-wrap gap-x-1.5 gap-y-2">
+          {words.map((w, i) => {
+            const c = w.confidence;
+            let theme = "bg-museum-900/50 text-slate-200 border-transparent";
+            
+            if (c <= 0.85 && c > 0.6) {
+              theme = "bg-amber-500/10 text-amber-400 border-amber-500/30";
+            } else if (c <= 0.6) {
+              theme = "bg-red-500/10 text-red-400 border-red-500/40 border-dashed cursor-pointer hover:bg-red-500/20";
+            }
+
+            return (
+              <span key={i} title={`${Math.round(c * 100)}% confidence`}
+                className={`px-2 py-0.5 rounded border font-heading transition-colors ${theme}`}>
+                {w.word}
+              </span>
+            );
+          })}
+        </div>
+        
+        <div className="mt-8 flex gap-6 text-sm text-slate-400 font-medium">
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-amber-500/20 border border-amber-500/40"></span> 
+            Uncertain (60–85%)
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="w-3 h-3 rounded-sm bg-red-500/20 border border-dashed border-red-500/50"></span> 
+            AI Predicted (&lt;60%)
+          </span>
         </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div style={{ background: "#1a3a1a", borderRadius: 10, padding: "12px 18px",
-        marginBottom: 20, border: "1px solid #065F46" }}>
-        <strong style={{ color: "#6ee7b7" }}>🏛️ Historian Mode</strong>
-        <span style={{ color: "#a7f3d0", fontSize: 13, marginLeft: 10 }}>
-          Expert review + RLHF correction loop — your edits train the model
+    <div className="max-w-7xl mx-auto px-4 py-8 animate-[fadeIn_0.5s_ease-out]">
+      {/* Role Banner */}
+      <div className="bg-museum-800/60 rounded-xl border border-museum-700 p-5 mb-8 border-l-4 border-l-emerald-500 shadow-md flex items-center">
+        <strong className="text-emerald-400 text-lg">🏛️ Historian Mode</strong>
+        <span className="text-slate-400 text-sm ml-4 border-l border-museum-700 pl-4">
+          Expert review & RLHF correction loop — your edits continuously train the AI.
         </span>
       </div>
 
-      {/* Upload */}
-      <div style={{ border: "2px dashed #065F46", borderRadius: 12, padding: 28,
-        textAlign: "center", marginBottom: 24, background: "#1a2a1a" }}>
-        <h2 style={{ color: "#6ee7b7" }}>Upload Document for Expert Review</h2>
-        <input type="file" accept="image/*" onChange={handleFile} style={{ marginTop: 14 }} />
-        {image && <img src={image} alt="doc"
-          style={{ maxWidth: "100%", maxHeight: 260, marginTop: 14, borderRadius: 8, border: "1px solid #065F46" }} />}
-        {base64 && (
-          <button onClick={handleAnalyze} disabled={loading}
-            style={{ background: "#065F46", color: "#D1FAE5", border: "none",
-              padding: "12px 28px", borderRadius: 8, fontSize: 15, cursor: "pointer",
-              fontWeight: "bold", marginTop: 14 }}>
-            {loading ? "⏳ Analyzing..." : "🔬 Analyze + Confidence Scan"}
-          </button>
+      {/* Upload Section */}
+      <div className="flex flex-col items-center justify-center border border-dashed border-emerald-500/30 bg-museum-800/30 rounded-2xl p-12 md:p-16 mb-12 hover:bg-museum-800/50 hover:border-emerald-500/50 transition-all group">
+        <h2 className="text-2xl font-heading text-emerald-400 mb-2">Upload Document for Expert Review</h2>
+        <p className="text-slate-400 font-light text-center mb-8">
+          Analyze document content alongside AI confidence metrics.
+        </p>
+
+        <input type="file" id="hist-file" accept="image/*" onChange={handleFile} className="hidden" />
+        <label htmlFor="hist-file" className="cursor-pointer bg-transparent border border-emerald-500 text-emerald-400 px-8 py-3 rounded hover:bg-emerald-500 hover:text-museum-900 transition-colors font-semibold tracking-wide shadow-sm">
+          Select File
+        </label>
+
+        {image && (
+          <div className="mt-10 animate-[fadeIn_0.4s_ease-out] w-full flex flex-col items-center">
+            <img src={image} alt="doc" className="max-h-[350px] object-contain rounded-lg border border-emerald-500/30 shadow-xl" />
+            <div className="mt-8">
+              <button onClick={handleAnalyze} disabled={loading} className="bg-gradient-to-r from-emerald-600 to-emerald-700 text-white px-8 py-3 rounded font-bold tracking-wide hover:-translate-y-0.5 transition-transform shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:transform-none">
+                {loading ? "⏳ Analyzing & Scanning..." : "🔬 Analyze + Confidence Scan"}
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
       {result && (
-        <>
+        <div className="space-y-12 animate-[fadeIn_0.5s_ease-out]">
           <ResultCard result={result} />
 
-          {/* Heatmap */}
-          <div style={box("#065F46")}>
-            <h3 style={{ color: "#6ee7b7" }}>🔍 Confidence Heatmap</h3>
+          {/* Heatmap Section */}
+          <div className="bg-museum-800/40 rounded-xl border border-museum-700 shadow-lg p-8 border-t-[3px] border-t-emerald-600">
+            <h3 className="text-2xl font-heading text-emerald-400 border-b border-museum-700 pb-4">
+              🔍 Confidence Heatmap
+            </h3>
             <Heatmap />
           </div>
 
-          {/* Correction panel */}
+          {/* Correction Loop Section */}
           {result.predictedWords?.length > 0 && (
-            <div style={{ ...box("#EF4444"), background: "#2a1010" }}>
-              <h3 style={{ color: "#FCA5A5", marginBottom: 6 }}>✏️ Correction Mode — Red Words</h3>
-              <p style={{ color: "#fca5a5", fontSize: 13, marginBottom: 16 }}>
-                AI is uncertain about these words. Correct them — your input directly improves the model.
+            <div className="bg-red-900/10 rounded-xl border border-red-900/30 shadow-lg p-8 border-t-[3px] border-t-red-600">
+              <h3 className="text-2xl font-heading text-red-400 mb-2">✏️ Correction Mode</h3>
+              <p className="text-slate-400 font-light mb-8 text-sm">
+                AI is highly uncertain about the following words. Provide correct transcriptions to update the training dataset.
               </p>
-              {result.predictedWords.map((pw, i) => (
-                <div key={i} style={{ marginBottom: 16 }}>
-                  <label style={{ color: "#FCA5A5", fontSize: 13 }}>
-                    Word #{i + 1} — AI predicted: <strong style={{ color: "#f87171" }}>"{pw.predicted}"</strong>
-                    <span style={{ color: "#c9a96e", marginLeft: 8 }}>
-                      ({Math.round(pw.confidence * 100)}% confidence)
-                    </span>
-                  </label>
-                  <input
-                    placeholder="Type correct word (leave blank if AI is right)"
-                    value={corrections[pw.predicted] || ""}
-                    onChange={e => setCorrections(prev => ({ ...prev, [pw.predicted]: e.target.value }))}
-                    style={{ display: "block", width: "100%", marginTop: 6, padding: 10,
-                      borderRadius: 8, background: "#1a0f00", color: "#f5e6c8",
-                      border: "1px solid #EF4444", fontSize: 14 }} />
-                </div>
-              ))}
-              {saved
-                ? <p style={{ color: "#6ee7b7", fontWeight: "bold" }}>✅ Saved to training database!</p>
-                : <button onClick={handleSaveCorrections}
-                    style={{ background: "#7f1d1d", color: "#FCA5A5", border: "1px solid #EF4444",
-                      padding: "10px 24px", borderRadius: 8, cursor: "pointer", fontWeight: "bold" }}>
-                    Submit Corrections to Training Data
+              
+              <div className="space-y-6">
+                {result.predictedWords.map((pw, i) => (
+                  <div key={i} className="bg-museum-900/60 p-5 rounded-lg border border-museum-700 flex flex-col md:flex-row md:items-center gap-4 justify-between">
+                    <div className="flex flex-col">
+                      <span className="text-slate-500 text-xs uppercase tracking-widest mb-1">Prediction</span>
+                      <div className="flex items-center gap-3">
+                        <strong className="text-red-400 text-xl font-heading tracking-wide">{pw.predicted}</strong>
+                        <span className="bg-red-500/10 text-red-400 text-xs px-2 py-1 rounded-full border border-red-500/20">
+                          {Math.round(pw.confidence * 100)}% confidence
+                        </span>
+                      </div>
+                    </div>
+                    <div className="w-full md:w-1/2">
+                      <input
+                        className="w-full bg-museum-900 border border-red-900/50 text-slate-200 px-4 py-3 rounded focus:outline-none focus:border-red-500 transition-colors shadow-inner"
+                        placeholder="Type correct word (leave blank if correct)"
+                        value={corrections[pw.predicted] || ""}
+                        onChange={e => setCorrections(prev => ({ ...prev, [pw.predicted]: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-8 pt-8 border-t border-red-900/30 flex justify-end">
+                {saved ? (
+                  <p className="text-emerald-400 font-semibold px-6 py-3 border border-emerald-500/30 bg-emerald-500/10 rounded">
+                    ✅ Successfully saved to training database!
+                  </p>
+                ) : (
+                  <button onClick={handleSaveCorrections} className="bg-gradient-to-r from-red-600 to-red-800 text-white px-8 py-3 rounded font-bold tracking-wide hover:-translate-y-0.5 transition-transform shadow-lg shadow-red-500/20">
+                    Submit Corrections to Database
                   </button>
-              }
+                )}
+              </div>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   );

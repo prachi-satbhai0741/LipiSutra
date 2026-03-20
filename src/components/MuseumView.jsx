@@ -6,9 +6,9 @@ const MOCK_STATS = {
   museum: "Raja Dinkar Kelkar Museum, Pune",
   total: 47, processed: 31, pending: 16,
   scripts: [
-    { name: "Modi Script", count: 23, color: "#D4A017" },
-    { name: "Devanagari", count: 18, color: "#6ee7b7" },
-    { name: "Persian", count: 6,  color: "#93C5FD" }
+    { name: "Modi Script", count: 23, color: "bg-gold-500" },
+    { name: "Devanagari", count: 18, color: "bg-emerald-400" },
+    { name: "Persian", count: 6,  color: "bg-blue-400" }
   ],
   avgConfidence: 71,
   recentDocs: [
@@ -53,93 +53,107 @@ export default function MuseumView() {
   const s = MOCK_STATS;
 
   return (
-    <div>
-      <div style={{ background: "#3a2a00", borderRadius: 10, padding: "12px 18px",
-        marginBottom: 20, border: "1px solid #F59E0B" }}>
-        <strong style={{ color: "#FCD34D" }}>🏛️ Museum Admin Mode</strong>
-        <span style={{ color: "#FDE68A", fontSize: 13, marginLeft: 10 }}>
+    <div className="max-w-7xl mx-auto px-4 py-8 animate-[fadeIn_0.5s_ease-out]">
+      {/* Role Banner */}
+      <div className="bg-museum-800/60 rounded-xl border border-museum-700 p-5 mb-8 border-l-4 border-l-amber-500 shadow-md flex items-center">
+        <strong className="text-amber-400 text-lg">🏛️ Museum Admin Mode</strong>
+        <span className="text-slate-400 text-sm ml-4 border-l border-museum-700 pl-4">
           {s.museum}
         </span>
       </div>
 
-      {/* Analytics dashboard */}
-      <div style={{ background: "#2a1800", borderRadius: 12, padding: 24,
-        marginBottom: 20, border: "1px solid #8B6914" }}>
-        <h3 style={{ color: "#D4A017", marginBottom: 16 }}>📊 Collection Analytics</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 14 }}>
+      {/* Analytics Dashboard */}
+      <div className="bg-museum-800/40 rounded-xl border border-museum-700 shadow-xl p-8 mb-12">
+        <h3 className="text-2xl font-heading text-gold-500 mb-8 border-b border-museum-700 pb-4">
+          📊 Collection Analytics
+        </h3>
+        
+        {/* KPI Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
           {[
-            { label: "Total Docs", value: s.total, color: "#D4A017" },
-            { label: "Digitized",  value: s.processed, color: "#6ee7b7" },
-            { label: "Pending",    value: s.pending, color: "#FCA5A5" },
-            { label: "Avg Confidence", value: s.avgConfidence + "%", color: "#93C5FD" }
+            { label: "Total Docs", value: s.total, color: "text-gold-500" },
+            { label: "Digitized",  value: s.processed, color: "text-emerald-400" },
+            { label: "Pending",    value: s.pending, color: "text-red-400" },
+            { label: "Avg Confidence", value: s.avgConfidence + "%", color: "text-blue-400" }
           ].map((stat, i) => (
-            <div key={i} style={{ background: "#1a0f00", borderRadius: 8, padding: 16,
-              textAlign: "center", border: "1px solid #5a3e00" }}>
-              <div style={{ fontSize: 30, fontWeight: "bold", color: stat.color }}>
+            <div key={i} className="bg-museum-900/60 rounded-xl p-6 text-center border border-museum-700/50 shadow-inner">
+              <div className={`text-4xl font-bold font-heading mb-2 ${stat.color}`}>
                 {stat.value}
               </div>
-              <div style={{ fontSize: 11, color: "#c9a96e", marginTop: 4 }}>{stat.label}</div>
+              <div className="text-xs text-slate-500 uppercase tracking-widest font-semibold">{stat.label}</div>
             </div>
           ))}
         </div>
 
-        {/* Script breakdown bars */}
-        <div style={{ marginTop: 20 }}>
-          <strong style={{ color: "#D4A017", fontSize: 13 }}>Scripts in Collection</strong>
-          {s.scripts.map(sc => (
-            <div key={sc.name} style={{ marginTop: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between",
-                fontSize: 12, color: "#c9a96e", marginBottom: 4 }}>
-                <span>{sc.name}</span><span>{sc.count} docs</span>
+        {/* Script Breakdown */}
+        <div className="mb-12">
+          <strong className="text-slate-200 text-sm tracking-widest uppercase font-semibold block mb-6">Scripts in Collection</strong>
+          <div className="space-y-5">
+            {s.scripts.map(sc => (
+              <div key={sc.name}>
+                <div className="flex justify-between text-sm text-slate-400 mb-2 font-medium">
+                  <span>{sc.name}</span>
+                  <span>{sc.count} docs</span>
+                </div>
+                <div className="bg-museum-900/80 rounded-full h-2.5 overflow-hidden shadow-inner flex">
+                  <div className={`${sc.color} h-full rounded-full transition-all duration-1000 ease-out`} style={{ width: `${(sc.count / s.total) * 100}%` }} />
+                </div>
               </div>
-              <div style={{ background: "#1a0f00", borderRadius: 4, height: 8 }}>
-                <div style={{ background: sc.color, borderRadius: 4, height: "100%",
-                  width: `${(sc.count / s.total) * 100}%`, transition: "width 0.5s" }} />
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
-        {/* Recent docs table */}
-        <div style={{ marginTop: 20 }}>
-          <strong style={{ color: "#D4A017", fontSize: 13 }}>Recent Documents</strong>
-          <table style={{ width: "100%", marginTop: 10, borderCollapse: "collapse", fontSize: 13 }}>
-            <thead>
-              <tr style={{ borderBottom: "1px solid #5a3e00" }}>
-                {["Document", "Script", "Status"].map(h => (
-                  <th key={h} style={{ color: "#c9a96e", textAlign: "left", padding: "6px 8px" }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[...s.recentDocs, ...done].map((doc, i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #2a1800" }}>
-                  <td style={{ padding: "8px", color: "#f5e6c8" }}>{doc.name}</td>
-                  <td style={{ padding: "8px", color: "#c9a96e" }}>{doc.script}</td>
-                  <td style={{ padding: "8px" }}>{doc.status}</td>
+        {/* Recent Docs Table */}
+        <div className="mt-8">
+          <strong className="text-slate-200 text-sm tracking-widest uppercase font-semibold block mb-6">Recent Documents</strong>
+          <div className="overflow-x-auto border border-museum-700 rounded-lg">
+            <table className="min-w-full text-left bg-museum-900/30">
+              <thead className="bg-museum-900/80 border-b border-museum-700">
+                <tr>
+                  {["Document", "Script", "Status"].map(h => (
+                    <th key={h} className="px-6 py-4 text-xs tracking-widest text-slate-400 uppercase font-semibold">{h}</th>
+                  ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-museum-700/50 text-sm">
+                {[...s.recentDocs, ...done].map((doc, i) => (
+                  <tr key={i} className="hover:bg-museum-800/50 transition-colors">
+                    <td className="px-6 py-4 text-slate-200 font-medium">{doc.name}</td>
+                    <td className="px-6 py-4 text-slate-400">{doc.script}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${
+                        doc.status.includes("Done") ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : 
+                        doc.status.includes("Fail") ? "bg-red-500/10 text-red-400 border-red-500/20" : 
+                        "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                      }`}>
+                        {doc.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Bulk upload */}
-      <div style={{ border: "2px dashed #F59E0B", borderRadius: 12, padding: 28,
-        textAlign: "center", background: "#2a1800" }}>
-        <h3 style={{ color: "#FCD34D" }}>📁 Bulk Upload Pipeline</h3>
-        <p style={{ color: "#FDE68A", fontSize: 13, marginTop: 8, marginBottom: 16 }}>
-          Select multiple document images — all processed automatically
+      {/* Bulk Upload Pipeline */}
+      <div className="border border-dashed border-amber-500/40 bg-museum-800/30 rounded-2xl p-12 text-center transition-colors hover:bg-museum-800/50 hover:border-amber-500/60 shadow-md">
+        <h3 className="text-2xl font-heading text-amber-500 mb-2">📁 Bulk Upload Pipeline</h3>
+        <p className="text-slate-400 font-light mb-8 max-w-md mx-auto">
+          Select multiple document images to be processed automatically and uploaded to the database entirely sequentially.
         </p>
-        <input type="file" accept="image/*" multiple onChange={handleFiles} />
+        
+        <input id="bulk-upload" type="file" accept="image/*" multiple onChange={handleFiles} className="hidden" />
+        <label htmlFor="bulk-upload" className="cursor-pointer bg-transparent border border-amber-500 text-amber-500 px-8 py-3 rounded hover:bg-amber-500 hover:text-museum-900 transition-colors font-semibold tracking-wide shadow-sm">
+          Select Multiple Files
+        </label>
+        
         {files.length > 0 && (
-          <div style={{ marginTop: 12 }}>
-            <p style={{ color: "#c9a96e", fontSize: 13 }}>{files.length} file(s) selected</p>
-            <button onClick={handleBulkProcess} disabled={processing}
-              style={{ background: "#F59E0B", color: "#1a0f00", border: "none",
-                padding: "12px 28px", borderRadius: 8, fontSize: 15,
-                cursor: "pointer", fontWeight: "bold", marginTop: 12 }}>
-              {processing ? `⏳ Processing ${files.length} files...` : "⚙️ Process All Documents"}
+          <div className="mt-10 animate-[fadeIn_0.4s_ease-out]">
+            <p className="text-amber-400 font-semibold mb-6 tracking-wide">{files.length} file(s) ready to process format</p>
+            <button onClick={handleBulkProcess} disabled={processing} className="bg-gradient-to-r from-amber-500 to-amber-700 text-museum-900 px-8 py-3 rounded font-bold tracking-wide hover:-translate-y-0.5 transition-transform shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:transform-none">
+              {processing ? `⏳ Processing ${files.length} files...` : "⚙️ Process All Documents Now"}
             </button>
           </div>
         )}

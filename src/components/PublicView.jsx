@@ -7,12 +7,6 @@ import { saveDocument } from "../services/firebase";
 import ResultCard from "./ResultCard";
 import MapSection from "./MapSection";
 
-const btn = (color = "#D4A017") => ({
-  background: color, color: "#1a0f00", border: "none",
-  padding: "12px 28px", borderRadius: 8, fontSize: 15,
-  cursor: "pointer", fontWeight: "bold", margin: 5
-});
-
 export default function PublicView() {
   const [image, setImage] = useState(null);
   const [base64, setBase64] = useState(null);
@@ -47,77 +41,120 @@ export default function PublicView() {
   const langCodes = { en: "en-US", hi: "hi-IN", gu: "gu-IN", te: "te-IN" };
 
   return (
-    <div>
-      {/* Search bar */}
-      <div style={{ marginBottom: 20 }}>
-        <input placeholder="🔍  Search historical documents, scripts, locations..."
-          style={{ width: "100%", padding: "14px 18px", borderRadius: 10, fontSize: 15,
-            background: "#2a1800", color: "#f5e6c8", border: "1px solid #8B6914",
-            outline: "none" }} />
-      </div>
-
-      {/* Upload */}
-      <div style={{ border: "2px dashed #8B6914", borderRadius: 12, padding: 30,
-        textAlign: "center", marginBottom: 24, background: "#2a1800" }}>
-        <h2 style={{ color: "#D4A017" }}>📜 Discover Historical Documents</h2>
-        <p style={{ color: "#c9a96e", marginTop: 8, marginBottom: 16 }}>
-          Upload a document image — we'll decode and explain it in your language
+    <div className="max-w-7xl mx-auto px-4 py-8 animate-[fadeIn_0.5s_ease-out]">
+      {/* Search & Intro */}
+      <div className="text-center max-w-3xl mx-auto mb-16 space-y-5">
+        <h1 className="text-4xl md:text-5xl font-heading text-gold-500 font-semibold tracking-wide">
+          Historical Document AI
+        </h1>
+        <p className="text-slate-400 text-lg font-light leading-relaxed">
+          Upload ancient scripts, scrolls, or decrees. Our AI will decode, transcribe, and trace their origins.
         </p>
-        <input type="file" accept="image/*" onChange={handleFile} />
-        {image && <img src={image} alt="doc"
-          style={{ maxWidth: "100%", maxHeight: 260, marginTop: 14, borderRadius: 8, border: "1px solid #8B6914" }} />}
-        {base64 && (
-          <div>
-            <button style={btn()} onClick={handleAnalyze} disabled={loading}>
-              {loading ? "⏳ Decoding..." : "🔍 Decode Document"}
-            </button>
-          </div>
-        )}
+        <div className="pt-6">
+          <input 
+            type="text" 
+            placeholder="Search the archives..." 
+            className="w-full bg-museum-800 border-b border-museum-700 text-slate-200 px-6 py-4 rounded focus:outline-none focus:border-gold-500 transition-colors shadow-inner"
+          />
+        </div>
       </div>
 
-      {/* Result */}
-      {result && (
-        <>
-          <ResultCard result={result} />
-          {/* Accessibility — TTS prominent */}
-          <div style={{ background: "#1e3a1a", borderRadius: 12, padding: 24,
-            marginBottom: 20, border: "1px solid #065F46", textAlign: "center" }}>
-            <h3 style={{ color: "#6ee7b7", marginBottom: 8 }}>🔊 Listen in Your Language</h3>
-            <p style={{ color: "#a7f3d0", fontSize: 13, marginBottom: 16 }}>
-              Accessibility feature — hear the document read aloud
-            </p>
-            <select value={lang} onChange={e => setLang(e.target.value)}
-              style={{ padding: 10, borderRadius: 8, marginRight: 10,
-                background: "#1a0f00", color: "#f5e6c8", border: "1px solid #8B6914", fontSize: 14 }}>
-              <option value="en">English</option>
-              <option value="hi">हिन्दी</option>
-              <option value="gu">ગુજરાતી</option>
-              <option value="te">తెలుగు</option>
-            </select>
-            <button style={btn("#065F46")}
-              onClick={async () => {
-                const t = await translateText(result.modernMarathi || result.transcript, lang);
-                setTranslation(t);
-              }}>
-              Translate
-            </button>
-            {translation && (
-              <>
-                <p style={{ marginTop: 14, fontSize: 16, lineHeight: 1.8, color: "#f5e6c8" }}>
-                  {translation}
-                </p>
-                <button style={{ ...btn("#0a4a2a"), marginTop: 8 }}
-                  onClick={() => speakText(translation, langCodes[lang])}>
-                  ▶ Read Aloud
-                </button>
-              </>
-            )}
+      {!result ? (
+        <div className="flex flex-col items-center justify-center border border-dashed border-museum-700 bg-museum-800/40 rounded-2xl p-16 md:p-24 transition-all hover:bg-museum-800/60 hover:border-gold-500/50 group">
+          <div className="w-16 h-16 rounded-full bg-gold-900/40 flex items-center justify-center mb-6 text-gold-500 group-hover:scale-110 transition-transform shadow-lg">
+            <span className="text-2xl">📜</span>
           </div>
-        </>
+          <h2 className="text-2xl font-heading text-slate-200 mb-2">Upload Artifact</h2>
+          <p className="text-slate-400 font-light text-center mb-8 max-w-md">
+            Drag and drop a high-resolution image of your historical document.
+          </p>
+          <input type="file" id="file-upload" className="hidden" accept="image/*" onChange={handleFile} />
+          <label htmlFor="file-upload" className="cursor-pointer bg-transparent border border-gold-500 text-gold-500 px-8 py-3 rounded hover:bg-gold-500 hover:text-museum-900 transition-colors font-semibold tracking-wide shadow-md">
+            Select File
+          </label>
+          
+          {image && (
+            <div className="mt-12 animate-[fadeIn_0.4s_ease-out]">
+              <img src={image} alt="doc" className="max-h-[300px] object-contain rounded-lg border border-museum-700 shadow-2xl" />
+              <div className="mt-8 flex justify-center">
+                 <button onClick={handleAnalyze} disabled={loading} className="bg-gradient-to-r from-gold-500 to-gold-600 text-museum-900 px-8 py-3 rounded font-bold tracking-wide hover:-translate-y-0.5 transition-transform shadow-lg shadow-gold-500/20 disabled:opacity-50 disabled:transform-none">
+                    {loading ? "⏳ Decoding Script..." : "✨ Decode Artifact"}
+                 </button>
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 mt-8 animate-[fadeIn_0.5s_ease-out]">
+          
+          {/* Left: Original Artifact */}
+          <div className="lg:col-span-5 lg:col-start-1 flex flex-col items-center">
+             <div className="w-full text-left mb-4">
+               <h3 className="text-xs font-semibold tracking-widest text-slate-500 uppercase">Original Artifact</h3>
+             </div>
+             <div className="bg-museum-800 p-4 rounded-xl border border-museum-700 shadow-2xl w-full flex justify-center">
+               <img src={image} alt="Historical Document" className="w-full h-auto rounded-lg object-contain max-h-[700px]" />
+             </div>
+             
+             <button onClick={() => {setResult(null); setImage(null); setBase64(null)}} className="mt-8 border border-museum-700 text-slate-400 px-6 py-3 rounded hover:bg-museum-800 hover:text-white transition-colors uppercase tracking-widest text-xs font-semibold">
+               Assess Another Artifact
+             </button>
+          </div>
+          
+          {/* Right: AI Analysis Data */}
+          <div className="lg:col-span-7 space-y-10">
+             <ResultCard result={result} />
+             
+             {/* Accessibility Panel inside right column */}
+             <div className="bg-museum-800/40 rounded-xl border-l-[3px] border-gold-500 p-8 shadow-md">
+               <h3 className="text-xl font-heading text-gold-500 mb-2">🔊 Listen in Your Language</h3>
+               <p className="text-slate-400 text-sm mb-6">Read the native translation and hear the document aloud.</p>
+               
+               <div className="flex flex-wrap gap-4 items-center">
+                 <select value={lang} onChange={e => setLang(e.target.value)} className="bg-museum-900 border border-museum-700 text-slate-200 px-4 py-2.5 rounded focus:outline-none focus:border-gold-500 shadow-inner">
+                   <option value="en">English (Translation)</option>
+                   <option value="hi">हिन्दी (Hindi)</option>
+                   <option value="gu">ગુજરાતી (Gujarati)</option>
+                   <option value="te">తెలుగు (Telugu)</option>
+                 </select>
+                 <button onClick={async () => {
+                   const t = await translateText(result.modernMarathi || result.transcript, lang);
+                   setTranslation(t);
+                 }} className="border border-gold-600 text-gold-500 hover:bg-gold-500 hover:text-museum-900 px-8 py-2.5 rounded transition-colors text-sm font-semibold tracking-wide">
+                   🌍 Translate
+                 </button>
+               </div>
+               
+               {translation && (
+                 <div className="mt-8 bg-museum-900/60 p-6 rounded-lg border border-museum-700/50">
+                   <p className="text-slate-200 text-lg leading-relaxed mb-6 font-light">{translation}</p>
+                   <button onClick={() => speakText(translation, langCodes[lang])} className="bg-gold-500/10 text-gold-500 hover:bg-gold-500 hover:text-museum-900 border border-gold-500/30 px-6 py-2.5 rounded text-sm font-medium transition-colors flex items-center gap-2">
+                     <span className="text-lg">▶</span>
+                     Read Aloud
+                   </button>
+                 </div>
+               )}
+             </div>
+             
+             {/* Map Integration */}
+             <div className="mt-12 border-t border-museum-800 pt-10">
+               <h3 className="text-xs font-semibold tracking-widest text-slate-500 uppercase mb-4">Geographical Origin</h3>
+               <MapSection documentLocation={result?.locations ? result.locations[0] : null} />
+             </div>
+          </div>
+        </div>
       )}
 
-      {/* Map always visible for public */}
-      <MapSection />
+      {/* Global Map if no result */}
+      {!result && (
+        <div className="mt-32 border-t border-museum-800 pt-16">
+          <h3 className="text-center font-heading text-3xl text-gold-500 mb-4">Atlas of Origins</h3>
+          <p className="text-center text-slate-500 mb-10 font-light max-w-lg mx-auto">
+            Discover the origins of our digitized archives on the global map.
+          </p>
+          <MapSection />
+        </div>
+      )}
     </div>
   );
 }

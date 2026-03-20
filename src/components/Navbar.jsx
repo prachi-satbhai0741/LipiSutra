@@ -1,55 +1,45 @@
 const ROLES = ["Public / Student", "Historian", "Museum Admin"];
 
-const ROLE_COLORS = {
-  "Public / Student": { bg: "#1e3a5f", text: "#93C5FD", dot: "#3B82F6" },
-  "Historian":        { bg: "#1a3a1a", text: "#6ee7b7", dot: "#10B981" },
-  "Museum Admin":     { bg: "#3a1a00", text: "#FCD34D", dot: "#F59E0B" }
-};
-
 export default function Navbar({ currentRole, setCurrentRole }) {
-  const colors = ROLE_COLORS[currentRole];
-
   return (
-    <nav style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "14px 24px", background: "#120900",
-      borderBottom: "1px solid #8B6914", marginBottom: 28,
-      position: "sticky", top: 0, zIndex: 100
-    }}>
-      {/* Logo */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <span style={{ fontSize: 24 }}>📜</span>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: "bold", color: "#D4A017" }}>LipiSutra</div>
-          <div style={{ fontSize: 10, color: "#c9a96e", letterSpacing: 2 }}>HISTORICAL DOCUMENT AI</div>
+    <nav className="bg-museum-800/80 backdrop-blur-md border-b border-museum-700 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row items-center justify-between gap-6">
+        
+        {/* Logo */}
+        <div className="flex items-center gap-4">
+          <span className="text-3xl">📜</span>
+          <div>
+            <div className="text-2xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-gold-400 to-gold-600 tracking-wider">
+              LIPISUTRA
+            </div>
+            <div className="text-[10px] text-slate-400 tracking-[0.2em] font-semibold mt-0.5">
+              HISTORICAL DOCUMENT AI
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Role Switcher */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <span style={{ fontSize: 12, color: "#c9a96e" }}>Viewing as:</span>
-        <div style={{ display: "flex", gap: 6 }}>
-          {ROLES.map(role => {
-            const active = currentRole === role;
-            const c = ROLE_COLORS[role];
-            return (
-              <button key={role}
-                onClick={() => setCurrentRole(role)}
-                style={{
-                  padding: "7px 14px", borderRadius: 20, fontSize: 12, fontWeight: 500,
-                  cursor: "pointer", transition: "all 0.2s",
-                  border: active ? `1.5px solid ${c.dot}` : "1.5px solid #3a2a10",
-                  background: active ? c.bg : "transparent",
-                  color: active ? c.text : "#8B6914"
-                }}>
-                {active && <span style={{ marginRight: 6, fontSize: 8,
-                  display: "inline-block", width: 6, height: 6,
-                  borderRadius: "50%", background: c.dot, verticalAlign: "middle" }} />}
-                {role}
-              </button>
-            );
-          })}
+        {/* Role Switcher */}
+        <div className="flex items-center gap-4">
+          <span className="text-xs text-slate-500 uppercase tracking-widest font-semibold hidden sm:inline-block">Viewing as</span>
+          <div className="flex bg-museum-900 p-1.5 rounded-full border border-museum-700/50 shadow-inner">
+            {ROLES.map(role => {
+              const active = currentRole === role;
+              return (
+                <button 
+                  key={role}
+                  onClick={() => setCurrentRole(role)}
+                  className={`
+                    px-5 py-2 rounded-full text-xs font-medium transition-all duration-300
+                    ${active ? "bg-museum-700 text-gold-400 shadow-md border border-museum-600/30" : "text-slate-400 hover:text-slate-200 hover:bg-museum-800/50 border border-transparent"}
+                  `}
+                >
+                  {role}
+                </button>
+              );
+            })}
+          </div>
         </div>
+
       </div>
     </nav>
   );
