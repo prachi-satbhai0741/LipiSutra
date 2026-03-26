@@ -1,6 +1,6 @@
 # Contributing to LipiSutra
 
-Thank you for your interest in contributing! 🙏
+Thank you for your interest in contributing! 
 
 ## How to Contribute
 

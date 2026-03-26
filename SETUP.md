@@ -1,10 +1,10 @@
-# 🛠️ LipiSutra — Setup & Requirements Guide
+# LipiSutra — Setup & Requirements Guide
 
 This document covers everything you need to get LipiSutra running locally, in Docker, or contributing to development.
 
 ---
 
-## 📋 System Requirements
+## System Requirements
 
 ### Option A — Local Development (Node.js)
 
@@ -37,7 +37,7 @@ docker compose version
 
 ---
 
-## 🔑 API Keys & Services Required
+## API Keys & Services Required
 
 You need accounts and API keys for the following services. All have **free tiers** that are sufficient to run LipiSutra.
 
@@ -67,7 +67,7 @@ VITE_GEMINI_KEY=your_key_here
 VITE_GOOGLE_KEY=your_key_here
 ```
 
-> 💡 Tip: You can use the same key for all four GCP APIs if you enable them all in the same project.
+> Tip: You can use the same key for all four GCP APIs if you enable them all in the same project.
 
 ### 3. Firebase
 
@@ -89,7 +89,7 @@ VITE_FIREBASE_APP_ID=
 
 ---
 
-## 📁 Environment File Setup
+## Environment File Setup
 
 1. Copy the template:
    ```bash
@@ -127,7 +127,7 @@ VITE_FIREBASE_APP_ID=
 
 ---
 
-## 🏃 Local Setup (Node.js)
+## Local Setup (Node.js)
 
 ```bash
 # 1. Clone the repository
@@ -158,7 +158,7 @@ Visit `http://localhost:5173` in your browser.
 
 ---
 
-## 🐳 Docker Setup
+## Docker Setup
 
 ### Production Mode (mirrors the deployed version)
 
@@ -202,7 +202,7 @@ docker ps
 
 ---
 
-## 🔍 Verifying the Setup
+## Verifying the Setup
 
 Once running, verify these features work:
 
@@ -214,7 +214,7 @@ Once running, verify these features work:
 
 ---
 
-## ❓ Troubleshooting
+## Troubleshooting
 
 ### `npm install` fails
 - Ensure Node.js ≥ 18: `node --version`
@@ -238,7 +238,7 @@ Once running, verify these features work:
 
 ---
 
-## 📦 Dependency Overview
+## Dependency Overview
 
 Key dependencies (see `package.json` for full list):
 
@@ -251,7 +251,7 @@ Key dependencies (see `package.json` for full list):
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution workflow, commit message conventions, and code style guidelines.
 
