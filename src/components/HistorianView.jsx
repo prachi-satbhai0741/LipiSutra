@@ -1,223 +1,351 @@
-import { useState } from "react";
-import { analyzeDocument } from "../services/gemini";
-import { saveDocument } from "../services/firebase";
-import { translateText } from "../services/translate";
-import { speakText } from "../services/tts";
+import { useState, useEffect } from "react";
+import { db } from "../services/firebase";
+import { collection, query, onSnapshot, doc, writeBatch, serverTimestamp, orderBy } from "firebase/firestore";
 import MapSection from "./MapSection";
 
-const langCodes = { en: "en-US", hi: "hi-IN", gu: "gu-IN", te: "te-IN" };
+export default function HistorianView() {
+  const [documents, setDocuments] = useState([]);
+  const [selectedDoc, setSelectedDoc] = useState(null);
 
-export default function HistorianView({ theme }) {
-  const [image, setImage] = useState(null);
-  const [base64, setBase64] = useState(null);
-  const [result, setResult] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [lang, setLang] = useState("hi");
-  const [translation, setTranslation] = useState("");
-  const [activeTab, setActiveTab] = useState("summary");
-  const [isTranslating, setIsTranslating] = useState(false);
+  const [editValues, setEditValues] = useState({});
+  const [changedFields, setChangedFields] = useState({});
+  const [activeTab, setActiveTab] = useState("Summary");
+  const [toastMsg, setToastMsg] = useState(null);
 
-  function handleFile(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImage(URL.createObjectURL(file));
-    const reader = new FileReader();
-    reader.onload = () => setBase64(reader.result.split(",")[1]);
-    reader.readAsDataURL(file);
-    setResult(null);
-    setTranslation("");
-    setActiveTab("summary");
-  }
+  useEffect(() => {
+    const q = query(collection(db, "documents"), orderBy("timestamp", "desc"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const pending = [];
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        if (data.editedOnce !== true) {
+          pending.push({ id: docSnap.id, ...data });
+        }
+      });
+      // Sort by accuracy ascending (lowest first) for review priority
+      pending.sort((a, b) => {
+        const accA = parseAccuracy(a);
+        const accB = parseAccuracy(b);
+        return accA - accB;
+      });
+      setDocuments(pending);
+    });
+    return () => unsubscribe();
+  }, []);
 
-  async function handleAnalyze() {
-    if (!base64) return;
-    setLoading(true);
-    setResult(null);
+  useEffect(() => {
+    if (!selectedDoc) return;
+    const unsub = onSnapshot(doc(db, "documents", selectedDoc.id), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().editedOnce === true) {
+        setSelectedDoc(prev => prev ? { ...prev, isLocked: true } : null);
+      }
+    });
+    return () => unsub();
+  }, [selectedDoc?.id]);
+
+  const handleOpenDoc = (docItem) => {
+    if (docItem.editedOnce === true) return;
+    setSelectedDoc(docItem);
+    // Strip XML tags from transcript for clean editing
+    const cleanTranscript = (docItem.transcript || "").replace(/<[^>]*>/g, "");
+    setEditValues({
+      script: docItem.script || "",
+      era: docItem.era || "",
+      confidenceScore: parseAccuracy(docItem),
+      summary: docItem.summary || "",
+      transcript: cleanTranscript,
+      modernMarathi: docItem.modernMarathi || "",
+      locations: docItem.locations || [],
+    });
+    setChangedFields({});
+    setActiveTab("Summary");
+  };
+
+  const handleFieldChange = (field, value) => {
+    if (selectedDoc?.isLocked) return;
+    setEditValues(prev => ({ ...prev, [field]: value }));
+    const originalValue = selectedDoc[field];
+    const isChanged = JSON.stringify(originalValue) !== JSON.stringify(value);
+
+    setChangedFields(prev => {
+      const next = { ...prev };
+      if (isChanged) {
+        next[field] = value;
+      } else {
+        delete next[field];
+      }
+      return next;
+    });
+  };
+
+  const handleLocationChange = (index, val) => {
+    if (selectedDoc?.isLocked) return;
+    const newLocs = [...(editValues.locations || [])];
+    newLocs[index] = val;
+    handleFieldChange("locations", newLocs);
+  };
+
+  const addLocation = () => {
+    if (selectedDoc?.isLocked) return;
+    handleFieldChange("locations", [...(editValues.locations || []), ""]);
+  };
+
+  const removeLocation = (index) => {
+    if (selectedDoc?.isLocked) return;
+    const newLocs = editValues.locations.filter((_, i) => i !== index);
+    handleFieldChange("locations", newLocs);
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedDoc || selectedDoc.isLocked) return;
+    const ObjectKeys = Object.keys(changedFields);
+    if (ObjectKeys.length === 0) return;
+
     try {
-      const geminiResult = await analyzeDocument(base64);
-      setResult(geminiResult);
-      setLoading(false);
-      saveDocument(geminiResult, "historian").catch(e => console.warn(e));
-    } catch (err) { 
-      alert("Analysis failed: " + err.message); 
-      setLoading(false);
+      const batch = writeBatch(db);
+      const docRef = doc(db, "documents", selectedDoc.id);
+
+      // Build the diff-tagged transcript
+      const originalClean = (selectedDoc.transcript || "").replace(/<[^>]*>/g, "");
+      const editedText = editValues.transcript || "";
+      const diffTranscript = buildDiffTranscript(originalClean, editedText);
+
+      batch.update(docRef, {
+        historianEdits: changedFields,
+        highlightedFields: ObjectKeys,
+        transcript: diffTranscript,
+        editedOnce: true,
+        status: "verified",
+        reviewedAt: serverTimestamp()
+      });
+
+      await batch.commit();
+
+      setToastMsg("Document Verified Successfully");
+      setSelectedDoc(null);
+      setChangedFields({});
+      setEditValues({});
+      setTimeout(() => setToastMsg(null), 3000);
+    } catch (error) {
+      console.error("Submission failed", error);
+      alert("Failed to submit review.");
     }
+  };
+
+  // Vanilla JS Diff Engine: wraps historian changes in <verified> tags
+  function buildDiffTranscript(originalClean, editedText) {
+    const origWords = originalClean.split(/\s+/).filter(w => w);
+    const editWords = editedText.split(/\s+/).filter(w => w);
+    const result = [];
+    const maxLen = Math.max(origWords.length, editWords.length);
+    for (let i = 0; i < maxLen; i++) {
+      const orig = origWords[i] || "";
+      const edit = editWords[i] || "";
+      if (!edit) continue;
+      if (orig !== edit) {
+        result.push(`<verified>${edit}</verified>`);
+      } else {
+        result.push(edit);
+      }
+    }
+    return result.join(" ");
   }
+
+  // Helper: extract numeric accuracy from overallAccuracy or confidenceScore
+  function parseAccuracy(docItem) {
+    if (docItem.overallAccuracy) {
+      return parseInt(String(docItem.overallAccuracy).replace("%", ""), 10) || 0;
+    }
+    return docItem.confidenceScore ?? 0;
+  }
+
+  const renderInput = (key, label, type = "text", rows) => {
+    const isChanged = !!changedFields[key];
+    const colorStyle = isChanged ? { color: "#7C3AED" } : { color: "#e2e8f0" };
+    return (
+      <div className="w-full">
+        <label className="block text-[10px] font-black tracking-widest text-slate-500 uppercase mb-2">{label}</label>
+        {type === "textarea" ? (
+          <textarea
+            value={editValues[key]}
+            onChange={e => handleFieldChange(key, e.target.value)}
+            disabled={selectedDoc?.isLocked}
+            rows={rows || 4}
+            className="w-full bg-museum-900/60 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-gold-500/50 transition-colors resize-none mb-4"
+            style={colorStyle}
+          />
+        ) : (
+          <input
+            type={type}
+            value={editValues[key]}
+            onChange={e => handleFieldChange(key, type === "number" ? Number(e.target.value) : e.target.value)}
+            disabled={selectedDoc?.isLocked}
+            className="w-full bg-museum-900/60 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-gold-500/50 transition-colors mb-4"
+            style={colorStyle}
+            min={type === "number" ? 0 : undefined}
+            max={type === "number" ? 100 : undefined}
+          />
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 min-h-screen">
-      
-      {/* Hero Section for Historian */}
-      {!image && !result && (
-        <div className="flex flex-col items-center animate-[fadeIn_0.6s_ease-out] text-center mt-12">
-          <h1 className="text-5xl md:text-6xl font-heading font-black mb-8 tracking-tight leading-tight" style={{ color: theme.accent }}>
-            Expert Analysis Suite <br/><span className="text-3xl font-light" style={{ color: theme.text }}>Historical Cryptography.</span>
-          </h1>
-          <p className="text-lg mb-12 max-w-2xl font-light leading-relaxed" style={{ color: theme.subtext }}>
-            Advanced toolset for historians and linguists to decipher, categorize, and archive ancient texts with high-precision neural models.
-          </p>
-          
-          <div 
-            onClick={() => document.getElementById("historian-upload").click()}
-            className="w-full max-w-2xl border-dashed backdrop-blur-xl rounded-3xl p-16 flex flex-col items-center justify-center transition-all cursor-pointer group"
-            style={{ backgroundColor: theme.headerBg, borderColor: theme.accent, color: theme.text, borderWidth: '2px', boxShadow: theme.cardShadow }}
-          >
-            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 border group-hover:scale-110 transition-transform shadow-inner" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
-              <span className="text-4xl">🔍</span>
-            </div>
-            <h2 className="text-2xl font-heading mb-2" style={{ color: theme.accent }}>Ingest New Archive</h2>
-            <p style={{ color: theme.subtext }}>Secure entry for professional documentation</p>
-            <input type="file" id="historian-upload" className="hidden" accept="image/*" onChange={handleFile} />
+      {!selectedDoc && (
+        <div className="mb-10 animate-[fadeIn_0.5s_ease-out] flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl md:text-5xl font-heading font-black text-gold-400 mb-2">Historian Review Queue</h1>
+            <p className="text-slate-500 tracking-[0.2em] uppercase text-xs">Documents pending scholarly verification</p>
           </div>
         </div>
       )}
 
-      {/* Main Analysis Layout */}
-      {(image) && (
-        <div className="mt-8 animate-[fadeIn_0.5s_ease-out]">
-          
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-            {/* Left Column: Specimen */}
-            <div className="lg:col-span-5">
-               <div className="p-5 rounded-2xl backdrop-blur-xl sticky top-28" style={{ backgroundColor: theme.headerBg, border: `1.5px solid ${theme.border}`, boxShadow: theme.cardShadow }}>
-                 <div className="text-[10px] font-black tracking-[0.3em] uppercase mb-4 pl-1" style={{ color: theme.subtext }}>Scientific Specimen</div>
-                 <img src={image} alt="doc" className="w-full h-auto rounded-xl object-contain max-h-[600px] shadow-inner mb-6 grayscale-[0.1] hover:grayscale-0 transition-all" />
-                 
-                 {!loading && !result && (
-                   <button onClick={handleAnalyze} className="w-full py-4 rounded-xl font-black text-xs tracking-[0.2em] uppercase transition-all active:scale-95" style={{ backgroundColor: theme.accentGlow, color: theme.buttonText, boxShadow: theme.cardShadow }}>
-                     Execute Advanced Scansion
-                   </button>
-                 )}
-                 {loading && (
-                   <div className="w-full bg-museum-950 text-gold-500/50 py-4 rounded-xl text-center border border-white/5 animate-pulse font-black text-xs tracking-[0.2em]">
-                     EXTRACTING SEMANTICS...
-                   </div>
-                 )}
-                 <button onClick={() => {setImage(null); setResult(null)}} className="w-full mt-4 text-[10px] font-black tracking-widest uppercase transition-colors" style={{ color: theme.subtext }}>
-                   Discard Specimen
-                 </button>
-               </div>
+      {!selectedDoc && documents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center animate-[fadeIn_0.5s_ease-out]">
+          <div className="text-slate-400 text-lg font-light tracking-wide">
+            All documents have been reviewed.
+          </div>
+        </div>
+      ) : !selectedDoc ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-[fadeIn_0.5s_ease-out]">
+          {documents.map(docItem => (
+            <div
+              key={docItem.id}
+              className="bg-museum-800/40 p-5 rounded-3xl border border-white/5 shadow-xl hover:border-gold-500/50 transition-all cursor-pointer backdrop-blur-xl"
+              onClick={() => handleOpenDoc(docItem)}
+            >
+              <img src={docItem.imageBase64?.startsWith('/') ? docItem.imageBase64 : `data:image/jpeg;base64,${docItem.imageBase64}`} alt="Thumbnail" className="w-full h-48 object-cover rounded-2xl mb-4 bg-black/50" />
+              <div className="flex justify-between items-start mb-4">
+                <div className="bg-amber-500/10 text-amber-400 border border-amber-500/30 text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full">
+                  Pending Review
+                </div>
+                <div className="text-gold-400 font-heading text-lg">{parseAccuracy(docItem)}%</div>
+              </div>
+              <div className="text-slate-200 font-black tracking-widest uppercase text-sm mb-1">{docItem.script || "Unknown Script"}</div>
+              <div className="text-slate-500 text-xs tracking-[0.2em] uppercase mb-1">{docItem.era || "Unknown Era"}</div>
+              <div className="text-slate-600 text-[10px] tracking-widest uppercase">Searched: {docItem.searchCount || 0} times</div>
             </div>
-
-            {/* Right Column: Tabbed Analysis */}
-            <div className="lg:col-span-7">
-               {loading && (
-                 <div className="animate-pulse space-y-8">
-                    <div className="flex gap-8 border-b border-white/5 pb-4">
-                      <div className="h-4 bg-museum-900 w-24 rounded"></div>
-                      <div className="h-4 bg-museum-900 w-24 rounded"></div>
-                      <div className="h-4 bg-museum-900 w-24 rounded"></div>
-                    </div>
-                    <div className="h-[500px] bg-museum-900/30 rounded-2xl border border-white/5"></div>
-                 </div>
-               )}
-
-               {result && !loading && (
-                 <div className="flex flex-col h-full">
-                    {/* Tabs */}
-                    <div className="flex border-b border-white/10 mb-6 gap-8 pb-1 overflow-x-auto no-scrollbar">
-                      {['summary', 'translation', 'origin'].map(tab => (
-                        <button 
-                          key={tab} 
-                          onClick={() => setActiveTab(tab)}
-                          className="pb-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all"
-                          style={{
-                             color: activeTab === tab ? theme.accent : theme.subtext,
-                             borderBottom: activeTab === tab ? `2.5px solid ${theme.accent}` : '2.5px solid transparent'
-                          }}
-                        >
-                          {tab === 'translation' ? 'Linguistic' : tab}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Tab Panes */}
-                    <div className="backdrop-blur-xl p-8 md:p-12 rounded-2xl flex-1 min-h-[500px]"
-                         style={{ backgroundColor: theme.headerBg, border: `1.5px solid ${theme.border}`, boxShadow: theme.cardShadow }}>
-                      {activeTab === 'summary' && (
-                        <div className="animate-[fadeIn_0.3s]">
-                          <div className="flex justify-between items-start mb-12 pb-8 border-b border-white/5">
-                             <div className="space-y-1">
-                               <div className="text-[10px] uppercase font-black tracking-widest" style={{ color: theme.subtext }}>Scientific ID</div>
-                               <div className="text-3xl font-heading font-black" style={{ color: theme.accent }}>{result.script}</div>
-                             </div>
-                             <div className="space-y-1 text-right">
-                               <div className="text-[10px] uppercase font-black tracking-widest" style={{ color: theme.subtext }}>Chronology</div>
-                               <div className="text-3xl font-heading font-black" style={{ color: theme.accent }}>{result.era}</div>
-                             </div>
-                          </div>
-                          <h4 className="text-[10px] font-black tracking-widest uppercase mb-6" style={{ color: theme.subtext }}>Analytical Abstract</h4>
-                          <p className="text-2xl font-light leading-relaxed italic border-l-[3px] py-3 pl-8 shadow-sm" style={{ color: theme.text, borderColor: theme.accent, backgroundColor: theme.surface }}>
-                            "{result.summary}"
-                          </p>
-                        </div>
-                      )}
-
-                      {activeTab === 'translation' && (
-                        <div className="animate-[fadeIn_0.3s]">
-                           <h4 className="text-[10px] font-black tracking-widest uppercase mb-8" style={{ color: theme.subtext }}>Modern Translation Layer</h4>
-                           <div className="flex flex-col sm:flex-row gap-4 mb-8 p-6 rounded-xl border shadow-inner" style={{ backgroundColor: theme.surface, borderColor: theme.border }}>
-                             <select value={lang} onChange={e => setLang(e.target.value)} className="px-6 py-4 rounded-xl focus:outline-none font-black text-xs tracking-widest uppercase" style={{ backgroundColor: theme.headerBg, borderColor: theme.border, color: theme.accent }}>
-                               <option value="en">English (Master)</option>
-                               <option value="hi">Hindi (हिन्दी)</option>
-                               <option value="gu">Gujarati (ગુજરાતી)</option>
-                               <option value="te">Telugu (తెలుగు)</option>
-                             </select>
-                             <button 
-                               onClick={async () => {
-                                 setIsTranslating(true);
-                                 try {
-                                   const t = await translateText(result.transcript, lang);
-                                   setTranslation(t);
-                                 } catch(e) {
-                                   console.error(e);
-                                 } finally {
-                                   setIsTranslating(false);
-                                 }
-                               }}
-                               className="px-8 py-4 rounded-xl text-[10px] font-black tracking-widest uppercase transition-all flex-1"
-                               style={{ backgroundColor: theme.accentGlow, color: theme.buttonText, boxShadow: theme.cardShadow }}
-                             >
-                               {isTranslating ? "DECRYPTING..." : "Proceed to Translation"}
-                             </button>
-                           </div>
-                           {translation && (
-                             <div className="p-8 rounded-xl border-t-[3px] shadow-inner" style={{ backgroundColor: theme.surface, borderColor: theme.accent }}>
-                               <p className="text-xl leading-relaxed mb-10 font-light" style={{ color: theme.text }}>{translation}</p>
-                               <button onClick={() => speakText(translation, langCodes[lang])} className="px-10 py-4 rounded-xl font-black tracking-widest uppercase text-[10px] transition-all active:translate-y-1" style={{ backgroundColor: theme.accentGlow, color: theme.buttonText, boxShadow: theme.cardShadow }}>
-                                 🔊 Dispatch Audio Signal
-                               </button>
-                             </div>
-                           )}
-                        </div>
-                      )}
-
-                      {activeTab === 'origin' && (
-                        <div className="h-full flex flex-col animate-[fadeIn_0.3s]">
-                          <h4 className="text-[10px] font-black tracking-widest text-slate-500 uppercase mb-6">Provenance Mapping</h4>
-                          <div className="flex-1 rounded-2xl overflow-hidden border border-white/10 shadow-inner relative z-0 min-h-[350px]">
-                            <MapSection locations={result?.locations} theme={theme} />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                 </div>
-               )}
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-2 animate-[fadeIn_0.5s_ease-out]">
+          {/* Left Column */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            <button
+              onClick={() => { setSelectedDoc(null); setChangedFields({}); setEditValues({}); }}
+              className="self-start text-slate-500 hover:text-white transition-colors text-sm font-black tracking-widest uppercase mb-2"
+            >
+              &larr; Back to Queue
+            </button>
+            <div className="bg-museum-900/40 p-5 rounded-2xl border border-white/5 shadow-2xl backdrop-blur-xl">
+              <div className="text-[10px] font-black tracking-[0.3em] text-slate-500 uppercase mb-4 pl-1">Document Specimen</div>
+              <img src={selectedDoc.imageBase64?.startsWith('/') ? selectedDoc.imageBase64 : `data:image/jpeg;base64,${selectedDoc.imageBase64}`} alt="Artifact" className="w-full h-auto rounded-xl object-contain max-h-[600px] shadow-inner bg-black/50" />
+              {selectedDoc.isLocked && (
+                <div className="mt-6 bg-purple-500/10 border border-purple-500/30 text-purple-400 p-4 rounded-2xl text-center font-black tracking-widest text-sm">
+                  This document has already been reviewed.
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Full Width Transcript Section (Fixes left gap & width) */}
-          {result && !loading && (
-            <div className="w-full mt-10 animate-[fadeIn_0.6s_ease-out]">
-               <h3 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 pl-1 text-center lg:text-left" style={{ color: theme.subtext }}>Full Specimen Transcript</h3>
-               <div className="backdrop-blur-3xl p-10 md:p-20 rounded-[2.5rem]" style={{ backgroundColor: theme.headerBg, border: `1.5px solid ${theme.border}`, boxShadow: theme.cardShadow }}>
-                  <div className="text-2xl md:text-5xl font-heading leading-[1.6] tracking-tight text-center lg:text-left" style={{ color: theme.text }}>
-                    {result.transcript || "No transcript could be extracted."}
-                  </div>
-               </div>
+          {/* Right Column */}
+          <div className="lg:col-span-7 flex flex-col h-full">
+            {/* Tabs */}
+            <div className="flex border-b border-white/10 mb-6 gap-8 pb-1 overflow-x-auto no-scrollbar">
+              {['Summary', 'Linguistic Analysis'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-3 text-[10px] font-black tracking-[0.2em] uppercase transition-all whitespace-nowrap ${activeTab === tab ? 'text-gold-400 border-b-2 border-gold-400' : 'text-slate-500 hover:text-slate-300'}`}
+                >
+                  {tab}
+                  {tab === 'Linguistic Analysis' && (
+                    <span className="text-gold-400 text-xs font-black ml-2">{parseAccuracy(selectedDoc)}%</span>
+                  )}
+                </button>
+              ))}
             </div>
-          )}
 
+            {/* Tab Content */}
+            <div className="bg-museum-900/60 backdrop-blur-xl p-8 md:p-12 rounded-[2.5rem] border border-white/5 shadow-2xl flex-1 flex flex-col min-h-[500px] mb-8">
+              {activeTab === 'Summary' && (
+                <div className="animate-[fadeIn_0.3s]">
+                  <div className="flex flex-col md:flex-row gap-6 mb-8 pb-8 border-b border-white/5">
+                    <div className="flex-1 space-y-2">
+                      {renderInput('script', 'Script Type')}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      {renderInput('era', 'Chronological Era')}
+                    </div>
+                  </div>
+                  <div>
+                    {renderInput('summary', 'Abstract / Summary', 'textarea', 3)}
+                  </div>
+                </div>
+              )}
+              {activeTab === 'Linguistic Analysis' && (
+                <div className="animate-[fadeIn_0.3s]">
+                  <div className="mb-8">
+                    {renderInput('transcript', 'Edit Transcript — changes turn purple', 'textarea', 8)}
+                  </div>
+                  
+                  <div className="mb-8">
+                    <div className="text-xs font-bold tracking-[0.3em] text-slate-500 uppercase mb-6">Original Paleographic Transcript</div>
+                    <div className="bg-museum-900/60 backdrop-blur-2xl p-10 md:p-16 rounded-3xl border border-white/5 shadow-2xl leading-[2.5] text-xl font-heading mb-6">
+                      {(() => {
+                        const rawTranscript = selectedDoc.transcript || "";
+                        const parts = rawTranscript.split(/(<predict[^>]*>.*?<\/predict>|<reconstruct>.*?<\/reconstruct>|<verified>.*?<\/verified>)/g);
+                        return parts.map((part, idx) => {
+                          if (!part) return null;
+                          const predictMatch = part.match(/<predict[^>]*>([^<]+)<\/predict>/);
+                          if (predictMatch) return <span key={idx} className="inline-block bg-gold-500/20 border border-gold-500 text-gold-300 px-2 py-0.5 rounded-md mx-0.5 text-sm">{predictMatch[1]}</span>;
+                          const reconstructMatch = part.match(/<reconstruct>([^<]+)<\/reconstruct>/);
+                          if (reconstructMatch) return <span key={idx} className="inline-block bg-red-500/20 border border-red-500 text-red-300 px-2 py-0.5 rounded-md mx-0.5 text-sm">{reconstructMatch[1]}</span>;
+                          const verifiedMatch = part.match(/<verified>([^<]+)<\/verified>/);
+                          if (verifiedMatch) return <span key={idx} className="inline-block bg-purple-500/20 border border-purple-500 text-purple-300 px-2 py-0.5 rounded-md mx-0.5 text-sm">{verifiedMatch[1]}</span>;
+                          return <span key={idx} className="text-slate-200">{part}</span>;
+                        });
+                      })()}
+                    </div>
+                    <div className="flex flex-row gap-6 text-[10px] uppercase tracking-widest text-slate-500">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full inline-block bg-[#7C3AED]"></span>
+                        Historian Verified
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full inline-block bg-gold-500"></span>
+                        AI Prediction
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full inline-block bg-red-500"></span>
+                        Reconstruction Needed
+                      </div>
+                    </div>
+                  </div>
+
+                  {renderInput('modernMarathi', 'Modern Translation', 'textarea', 5)}
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <div className="mt-auto pt-4">
+              <button
+                onClick={handleSubmit}
+                disabled={selectedDoc?.isLocked || Object.keys(changedFields).length === 0}
+                className="w-full bg-[#7C3AED] text-white px-8 py-4 rounded-xl font-black tracking-widest uppercase hover:bg-purple-600 transition-all shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Verify & Submit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastMsg && (
+        <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-museum-900 border border-purple-500/30 px-6 py-4 rounded-2xl shadow-2xl animate-[fadeIn_0.3s_ease-out]">
+          <span className="text-sm font-black tracking-widest uppercase" style={{ color: "#7C3AED" }}>{toastMsg}</span>
         </div>
       )}
     </div>

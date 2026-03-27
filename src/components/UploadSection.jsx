@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { analyzeDocument } from "../services/gemini";
-import { saveDocument, checkExistingHash } from "../services/firebase";
+import { saveDocument, checkExistingHash, db } from "../services/firebase";
+import { doc, updateDoc, increment } from "firebase/firestore";
 
 async function generateHash(message) {
   console.log('>>> [HASH] generateHash Initiated');
@@ -79,6 +80,8 @@ export default function UploadSection({ image, setImage, base64, setBase64, load
       onResult(cachedData);
       setProgress(100);
       setLoading(false);
+      // Increment search popularity counter
+      updateDoc(doc(db, "documents", hash), { searchCount: increment(1) }).catch(e => console.warn("searchCount increment failed", e));
       return;
     }
 

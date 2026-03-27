@@ -37,6 +37,60 @@ export default function PublicView({ theme }) {
     }
   }
 
+  const renderTranscription = (transcript) => {
+    if (!transcript) return <span className="opacity-50">No transcript extracted.</span>;
+    
+    // Split by <predict>, <reconstruct>, or <verified> tags
+    const parts = transcript.split(/(<predict[^>]*>.*?<\/predict>|<reconstruct>.*?<\/reconstruct>|<verified>.*?<\/verified>)/g);
+    
+    return parts.map((part, i) => {
+      if (!part) return null;
+      
+      const predictMatch = part.match(/<predict\s+confidence="([^"]+)">([^<]+)<\/predict>/);
+      if (predictMatch) {
+        const confidence = parseFloat(predictMatch[1]);
+        const word = predictMatch[2];
+        const opacity = Math.min(Math.max(confidence, 0.2), 0.9);
+        
+        return (
+          <span key={i} className="text-gold-500 relative group cursor-help transition-all"
+                style={{ display: 'inline', padding: '1px 4px', borderRadius: '3px', fontSize: 'inherit', backgroundColor: `rgba(212, 175, 55, ${opacity * 0.3})`, boxShadow: `0 0 ${opacity * 15}px rgba(212,175,55, ${opacity * 0.5})` }}>
+            {word}
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-amber-900 border border-gold-500 text-gold-500 text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded shadow-xl whitespace-nowrap z-50 pointer-events-none">
+              AI Prediction ({Math.round(confidence * 100)}%)
+            </span>
+          </span>
+        );
+      }
+      
+      const reconstructMatch = part.match(/<reconstruct>([^<]+)<\/reconstruct>/);
+      if (reconstructMatch) {
+        const word = reconstructMatch[1];
+        return (
+          <span key={i} className="relative group cursor-help transition-all"
+                style={{ background: "rgba(220,38,38,0.15)", color: "#FCA5A5", padding: "2px 5px", borderRadius: "4px", margin: "0 2px" }}>
+            {word}
+            <span className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-900 border border-red-500 text-white text-[10px] font-black uppercase tracking-[0.2em] px-3 py-1.5 rounded shadow-xl whitespace-nowrap z-50 pointer-events-none">
+              Reconstruction
+            </span>
+          </span>
+        );
+      }
+      
+      const verifiedMatch = part.match(/<verified>([^<]+)<\/verified>/);
+      if (verifiedMatch) {
+        const word = verifiedMatch[1];
+        return (
+          <span key={i} className="inline-block bg-purple-500/20 border border-purple-500 text-purple-300 px-2 py-0.5 rounded-md mx-0.5 text-sm">
+            {word}
+          </span>
+        );
+      }
+      
+      return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part}</span>;
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 min-h-screen outline-none">
 
@@ -205,7 +259,10 @@ export default function PublicView({ theme }) {
                           {translation && (
                             <div className="p-8 rounded-xl border-t-[3px] shadow-inner" style={{ backgroundColor: theme.surface, borderColor: theme.accent }}>
                               <p className="text-lg leading-relaxed mb-10 font-light" style={{ color: theme.text }}>{translation}</p>
-                              <button onClick={() => speakText(translation, langCodes[lang])} 
+                              <button onClick={() => {
+                                  const cleanText = (translation || '').replace(/<predict[^>]*>/g, '').replace(/<\/predict>/g, '').replace(/<reconstruct>/g, '').replace(/<\/reconstruct>/g, '');
+                                  speakText(cleanText, langCodes[lang]);
+                                }} 
                                       className="px-10 py-4 rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all hover:-translate-y-1 flex items-center justify-center gap-3 w-full sm:w-auto"
                                       style={{ backgroundColor: theme.accentGlow, color: theme.buttonText, boxShadow: theme.cardShadow }}
                               >
@@ -230,11 +287,18 @@ export default function PublicView({ theme }) {
 
                 {/* Full Width Transcript Section (Fixes left gap & width) */}
                 <div className="w-full mt-4 animate-[fadeIn_0.6s_ease-out]">
-                  <h3 className="text-xs font-bold tracking-[0.3em] uppercase mb-6 pl-1 text-center lg:text-left" style={{ color: theme.subtext }}>Original Paleographic Transcript</h3>
+                  <div className="flex items-center justify-between mb-6 pl-1">
+                    <h3 className="text-xs font-bold tracking-[0.3em] uppercase text-center lg:text-left" style={{ color: theme.subtext }}>Original Paleographic Transcript</h3>
+                    {result.overallAccuracy && (
+                      <span className="text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-full border" style={{ color: theme.accent, borderColor: theme.accent, backgroundColor: `${theme.accent}15` }}>
+                        Accuracy: {result.overallAccuracy}
+                      </span>
+                    )}
+                  </div>
                   <div className="backdrop-blur-2xl p-10 md:p-16 rounded-3xl"
                        style={{ backgroundColor: theme.headerBg, border: `1.5px solid ${theme.border}`, boxShadow: theme.cardShadow }}>
-                    <div className="text-base md:text-lg font-heading leading-[1.8] tracking-loose text-center lg:text-left drop-shadow-sm" style={{ color: theme.text }}>
-                      {result.transcript || "No transcript could be extracted."}
+                    <div className="text-lg md:text-xl font-serif leading-[2.4] drop-shadow-sm" style={{ color: theme.text, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {renderTranscription(result.transcript)}
                     </div>
                   </div>
                 </div>

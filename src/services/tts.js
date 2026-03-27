@@ -1,19 +1,46 @@
-const GOOGLE_KEY = import.meta.env.VITE_VISION_KEY;
+export function speakText(text, langCode = "hi-IN") {
+  // Strip all XML prediction/reconstruction tags before speaking
+  const cleanText = (text || "")
+    .replace(/<predict[^>]*>/g, "")
+    .replace(/<\/predict>/g, "")
+    .replace(/<reconstruct>/g, "")
+    .replace(/<\/reconstruct>/g, "");
 
-export async function speakText(text, langCode = "mr-IN") {
-  const response = await fetch(
-    `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        input: { text },
-        voice: { languageCode: langCode, ssmlGender: "FEMALE" },
-        audioConfig: { audioEncoding: "MP3" }
-      })
+  if (!window.speechSynthesis) {
+    console.error("Web Speech API not supported in this browser.");
+    return;
+  }
+
+  // Cancel any stuck silent queues
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(cleanText);
+  utterance.lang = "hi-IN";
+  utterance.volume = 1;
+  utterance.rate = 0.9;
+  utterance.pitch = 1;
+
+  function assignVoiceAndSpeak() {
+    const voices = window.speechSynthesis.getVoices();
+    const indicVoice = voices.find(v =>
+      v.name.includes("Google हिन्दी") ||
+      v.lang.includes("hi") ||
+      v.lang.includes("mr")
+    );
+    if (indicVoice) {
+      utterance.voice = indicVoice;
     }
-  );
-  const data = await response.json();
-  const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
-  audio.play();
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // Chrome async bug: getVoices() is empty on first call — wait for onvoiceschanged
+  const voices = window.speechSynthesis.getVoices();
+  if (voices.length > 0) {
+    assignVoiceAndSpeak();
+  } else {
+    window.speechSynthesis.onvoiceschanged = () => {
+      window.speechSynthesis.onvoiceschanged = null; // prevent repeated firing
+      assignVoiceAndSpeak();
+    };
+  }
 }
