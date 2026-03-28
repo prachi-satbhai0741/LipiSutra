@@ -360,3 +360,5 @@ Built with ❤️ for the **Indian OpenSource Community Hackathon 2026**
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+#   L i p i - S u t r a  
+ 
