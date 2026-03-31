@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="public/logo.png" alt="LipiSutra Logo" width="120" />
+
 
 # 📜 LipiSutra
 
@@ -25,76 +25,20 @@
 
 ## 📌 Table of Contents
 
-- [The Problem](#-the-problem)
-- [The Solution](#-the-solution)
-- [5 Core Innovations](#-5-core-innovations)
+
 - [System Architecture](#️-system-architecture)
 - [Tech Stack](#️-tech-stack)
 - [Getting Started](#-getting-started)
 - [Docker Setup](#-docker-setup)
 - [Environment Variables](#-environment-variables)
 - [Project Structure](#-project-structure)
-- [Feature Comparison](#-feature-comparison)
-- [Future Scope](#-future-scope)
-- [SDG Alignment](#-sdg-alignment)
-- [Research Foundation](#-research-foundation)
 - [Contributing](#-contributing)
 - [Team](#-team)
 - [License](#-license)
 
 ---
 
-## 🚨 The Problem
 
-India holds an estimated **50 million undigitized manuscripts** and historical land records written in complex regional scripts — Maratha-era Modi, Sanskrit, Brahmi — that fewer than **0.1% of the population** can read today.
-
-These documents are:
-- Physically deteriorating across fragmented, isolated archives
-- Completely inaccessible to modern researchers, cross-linguistic scholars, and visually impaired users
-- Vulnerable to AI hallucinations being passed off as historical fact — corrupting academic datasets permanently
-
-> **There is currently no single platform capable of intelligent reconstruction, multimodal accessibility, and rigorous hallucination prevention.**
-
----
-
-## 💡 The Solution
-
-LipiSutra serves three distinct user types through a **Role-Based Perspective Switcher**:
-
-| Role | Access | Purpose |
-|---|---|---|
-| 🌍 **Public / Student** | Full read access, free | Upload documents, receive structured output, TTS audio |
-| 🏛️ **Historian** | Verified expert layer | Convert AI predictions to permanently verified data(no login required) |
-| 🏢 **Museum** | Bulk upload portal | Institutional digitization pipeline + analytics dashboard |
-
----
-
-## 🚀 5 Core Innovations
-
-### 1. 🔍 Contextual Inpainting — Intelligent Reconstruction
-When a manuscript is torn or ink is faded, existing OCR tools output "unreadable." LipiSutra uses surrounding sentences and contextual relationships to logically **predict missing words and phrases** — treating the document as a living semantic structure.
-
-### 2. 🎨 Confidence-Based Color Provenance System
-Every AI prediction carries a confidence score enforced through strict visual accountability:
-
-| Color | Meaning | Confidence |
-|---|---|---|
-| 🟡 Yellow | AI prediction — flagged for historian review | Above 75% |
-| 🔴 Red | AI prediction — mandatory human intervention | Below 75% |
-| 🟣 Purple | Historian verified — mathematically confirmed — permanently locked | 100% |
-
-No other historical digitization platform enforces this level of **transparent color-coded AI accountability**.
-
-### 3. 🧠 RLHF — The System Gets Smarter Over Time
-Every historian correction is logged in Firestore as structured JSON — storing the original AI prediction, corrected version, script type, document era and historian credentials. This builds LipiSutra's own **proprietary ground-truth dataset** for future fine-tuning.
-
-### 4. 🔐 Cryptographic Deduplication
-Every uploaded image is instantly hashed using **SHA-256**. If the document has been previously verified, the entire AI pipeline is bypassed — serving the cached Purple-verified result in **50 milliseconds**, reducing cloud compute costs by up to **99%**.
-
-### 5. 🤝 Human Touch at Every Layer
-Civilians contribute documents. Historians verify predictions. The system learns from corrections. Human participation in LipiSutra is **not optional — it is structural**.
-
----
 
 ## ⚙️ System Architecture
 
@@ -278,57 +222,7 @@ LipiSutra/
 
 ---
 
-## 📊 Feature Comparison
 
-| Feature | LipiSutra | Traditional Portals (Namami/NAI) | Generic AI Tools |
-|---|---|---|---|
-| Multi-Script OCR | ✅ AI fine-tuned for Modi, Brahmi | ❌ Raw image scans only | ⚠️ Low accuracy on ancient scripts |
-| Hallucination Prevention | ✅ Color provenance + HITL | ❌ None | ❌ None |
-| Deduplication | ✅ SHA-256 cryptographic | ❌ None | ❌ None |
-| Audio Accessibility (TTS) | ✅ Integrated | ❌ None | ⚠️ External only |
-| Multilingual Translation | ✅ Context-aware via Gemini | ❌ Manual expert only | ⚠️ Literal, loses nuance |
-| Public Access | ✅ Free, no login required | ❌ Restricted, physical travel | ❌ No public heritage UI |
-
----
-
-## 🔭 Future Scope
-
-- **AR/VR heritage reconstruction** — bringing manuscripts to life visually
-- **Generative animated storytelling** — for education and public engagement
-- **Specialized fine-tuned model** — trained on verified historical Indian script data
-- **Government API** — serving state archives and national digitization missions
-
----
-
-## 🌍 SDG Alignment
-
-| SDG | Goal | How LipiSutra Addresses It |
-|---|---|---|
-| **SDG 11** | Sustainable Cities & Communities *(Primary)* | Digital preservation of culturally significant manuscripts |
-| **SDG 4** | Quality Education | Centuries-old knowledge freely accessible to students |
-| **SDG 10** | Reduced Inequalities | TTS accessibility, free public access, zero economic barrier |
-| **SDG 17** | Partnerships for the Goals | Connecting museums, temples, universities and archives |
-
----
-
-## 📚 Research Foundation
-
-1. **MODI-HChar Dataset — Mendeley** — Validates dataset source for Modi script OCR (575,920 character images across 57 classes)
-   `data.mendeley.com/datasets/pk2zrt58pp/1`
-
-2. **INCLUDE — IIT Bombay** — Validates accessibility-first approach and Indic script recognition via deep learning
-   `https://dl.acm.org/doi/epdf/10.1145/3394171.3413528`
-
-3. **AI4Bharat IndicTrans2** — Validates multilingual translation layer across all 22 scheduled Indic languages
-   `github.com/AI4Bharat/IndicTrans2`
-
-4. **Printed OCR for Extremely Low-Resource Indic Languages — IIIT Hyderabad** — Validates OCR approach for minimal training data scripts
-   `https://cdn.iiit.ac.in/cdn/cvit.iiit.ac.in/images/ConferencePapers/2024/Printed-OCR-for-Extremely-Lowresource-Indic-Languages.pdf`
-
-5. **PLATTER — arXiv** — Validates handwritten text recognition pipeline
-   `https://arxiv.org/html/2502.06172v1`
-
----
 
 ## 🤝 Contributing
 
