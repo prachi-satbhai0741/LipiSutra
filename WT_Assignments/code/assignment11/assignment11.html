@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LipiSutra - DOM Manipulation</title>
+  <style>
+    body    { font-family: Georgia, serif; background:#f5ede0; color:#1a0800; padding:24px; }
+    #shelf  { list-style:none; padding:0; max-width:620px; }
+    #shelf li { background:#fff; border:1px solid #8B4513; border-radius:8px;
+                padding:12px; margin-bottom:8px; display:flex; justify-content:space-between; }
+    #shelf li.verified { background:#e6f4ea; border-color:#2e7d32; }
+    #dropzone { border:2px dashed #8B4513; border-radius:12px; padding:40px;
+                text-align:center; margin:20px 0; max-width:620px; }
+    #dropzone.hot { background:#ede0cc; border-style:solid; }
+    button  { margin-right:8px; }
+  </style>
+</head>
+<body>
+  <h1>LipiSutra Archive Shelf</h1>
+
+  <input id="newScript" type="text" placeholder="Script name, e.g. Sharada">
+  <button id="addBtn">Add Manuscript</button>
+  <button id="clearBtn">Clear Shelf</button>
+
+  <ul id="shelf"></ul>
+
+  <div id="dropzone">Drop an artifact image here</div>
+  <img id="preview" alt="" style="display:none; max-width:260px;
+       border:1px solid #8B4513; border-radius:8px;">
+
+  <p id="log"></p>
+
+  <script src="assignment11.js" defer></script>
+</body>
+</html>

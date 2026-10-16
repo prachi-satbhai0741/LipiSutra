@@ -1,0 +1,48 @@
+/* ---------- MOBILE-FIRST DEFAULTS ---------- */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: Georgia, serif; background: #f5ede0; color: #1a0800; }
+img  { max-width: 100%; height: auto; }          /* flexible media */
+
+/* FLEXBOX : header stacks vertically on a phone */
+.site-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #2a1800;
+  color: #D4A017;
+}
+.main-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 18px; }
+.main-nav a { color: #f5e6c8; text-decoration: none; }
+
+/* CSS GRID : one column of cards on a phone */
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.card { background: #fff; border: 1px solid #8B4513; border-radius: 10px; padding: 16px; }
+
+/* FLEXBOX : main and sidebar stacked on a phone */
+.site-wrapper { display: flex; flex-direction: column; gap: 20px; padding: 20px; }
+.sidebar { background: #ede0cc; border-radius: 10px; padding: 16px; }
+
+/* ---------- TABLET : 768px and above ---------- */
+@media (min-width: 768px) {
+  .site-header  { flex-direction: row; justify-content: space-between; padding: 16px 32px; }
+  .card-grid    { grid-template-columns: repeat(2, 1fr); }   /* 2 columns */
+}
+
+/* ---------- DESKTOP : 1024px and above ---------- */
+@media (min-width: 1024px) {
+  .site-wrapper { flex-direction: row; padding: 32px; }
+  .site-wrapper main { flex: 7; }                             /* 7/12 of the row */
+  .sidebar           { flex: 3; align-self: flex-start; }     /* 3/12 of the row */
+  .card-grid         { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ---------- LARGE DESKTOP : 1280px and above ---------- */
+@media (min-width: 1280px) {
+  .site-wrapper { max-width: 1240px; margin: 0 auto; }
+}

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LipiSutra Server</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <h1>LipiSutra Node Server</h1>
+  <p>This page, its stylesheet and its image are all served statically
+     from the <code>public/</code> directory.</p>
+
+  <img src="/assets/hero.png" alt="Manuscript" width="320">
+
+  <h2>Available routes</h2>
+  <ul>
+    <li><a href="/about">/about</a> - HTML response</li>
+    <li><a href="/api/health">/api/health</a> - JSON response</li>
+    <li><a href="/search?script=Modi">/search?script=Modi</a> - query string</li>
+    <li><a href="/manuscripts/LS-0101">/manuscripts/LS-0101</a> - route parameter</li>
+    <li><a href="/boom">/boom</a> - triggers the error handler</li>
+    <li><a href="/nothing-here">/nothing-here</a> - triggers the 404 handler</li>
+  </ul>
+</body>
+</html>

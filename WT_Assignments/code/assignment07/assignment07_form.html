@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LipiSutra - Submit a Manuscript</title>
+  <style>
+    body   { font-family: Georgia, serif; background: #f5ede0; color: #1a0800; padding: 24px; }
+    form   { max-width: 560px; background: #fff; border: 1px solid #8B4513;
+             border-radius: 10px; padding: 24px; }
+    label  { display: block; margin-top: 14px; font-weight: bold; font-size: 14px; }
+    input, select, textarea {
+             width: 100%; padding: 8px; margin-top: 4px;
+             border: 1px solid #c9b79a; border-radius: 6px; font-size: 14px; }
+    .error { color: #b00020; font-size: 12px; min-height: 16px; display: block; }
+    .ok    { border-color: #2e7d32; }
+    .bad   { border-color: #b00020; background: #fff5f5; }
+    button { margin-top: 18px; padding: 10px 20px; border: 0; border-radius: 6px;
+             background: #6B2D0E; color: #fff8f0; font-size: 15px; cursor: pointer; }
+    button:disabled { background: #b9a893; cursor: not-allowed; }
+    #counter { font-size: 12px; color: #5c3317; }
+    #banner  { padding: 10px; border-radius: 6px; margin-bottom: 14px; display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>Submit a Manuscript for Decoding</h1>
+
+  <!-- novalidate turns off the browser bubbles so we can render our own messages -->
+  <form id="submitForm" novalidate>
+
+    <div id="banner"></div>
+
+    <label for="name">Contributor Name</label>
+    <input id="name" name="name" type="text" required minlength="3" maxlength="40"
+           pattern="^[A-Za-z ]{3,40}$" placeholder="Prachi Satbhai">
+    <span class="error" id="err-name"></span>
+
+    <label for="email">Email Address</label>
+    <input id="email" name="email" type="email" required placeholder="you@example.com">
+    <span class="error" id="err-email"></span>
+
+    <label for="mobile">Mobile Number</label>
+    <input id="mobile" name="mobile" type="text" required pattern="^[6-9][0-9]{9}$"
+           placeholder="9876543210">
+    <span class="error" id="err-mobile"></span>
+
+    <label for="accession">Accession Number</label>
+    <input id="accession" name="accession" type="text" required pattern="^LS-[0-9]{4}$"
+           placeholder="LS-0147">
+    <span class="error" id="err-accession"></span>
+
+    <label for="script">Expected Script</label>
+    <select id="script" name="script" required>
+      <option value="">-- select --</option>
+      <option>Modi</option><option>Devanagari</option>
+      <option>Brahmi</option><option>Sharada</option>
+    </select>
+    <span class="error" id="err-script"></span>
+
+    <label for="year">Estimated Year (CE)</label>
+    <input id="year" name="year" type="number" required min="-500" max="2026" placeholder="1712">
+    <span class="error" id="err-year"></span>
+
+    <label for="notes">Provenance Notes</label>
+    <textarea id="notes" name="notes" rows="4" maxlength="200"
+              placeholder="Where was this document found?"></textarea>
+    <span id="counter">0 / 200</span>
+    <span class="error" id="err-notes"></span>
+
+    <label for="artifact">Artifact Image (JPG or PNG, max 5 MB)</label>
+    <input id="artifact" name="artifact" type="file" accept="image/png, image/jpeg" required>
+    <span class="error" id="err-artifact"></span>
+
+    <img id="preview" alt="" style="display:none; max-width:240px; margin-top:10px;
+         border:1px solid #8B4513; border-radius:6px;">
+
+    <button type="submit" id="submitBtn">Submit for Decoding</button>
+  </form>
+
+  <script src="assignment07_validation.js" defer></script>
+</body>
+</html>

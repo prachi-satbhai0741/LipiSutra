@@ -1,0 +1,6 @@
+body { font-family: Georgia, serif; background: #f5ede0; color: #1a0800;
+        max-width: 760px; margin: 40px auto; padding: 0 20px; }
+h1   { color: #6B2D0E; }
+code { background: #ede0cc; padding: 2px 5px; border-radius: 3px; }
+img  { border: 1px solid #8B4513; border-radius: 8px; }
+a    { color: #6B2D0E; }

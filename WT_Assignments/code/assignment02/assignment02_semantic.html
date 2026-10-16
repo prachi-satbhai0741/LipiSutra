@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LipiSutra - Semantic Layout</title>
+  <style>
+    body   { font-family: Georgia, serif; margin: 0; color: #1a0800; background: #f5ede0; }
+    header { background: #2a1800; color: #D4A017; padding: 20px 32px; }
+    nav ul { list-style: none; display: flex; gap: 24px; margin: 0; padding: 12px 32px;
+             background: #3a2410; }
+    nav a  { color: #f5e6c8; text-decoration: none; font-size: 14px; }
+    main   { padding: 24px 32px; }
+    article{ background: #fff; border-left: 4px solid #8B4513; padding: 16px; margin-bottom: 20px; }
+    aside  { background: #ede0cc; border: 1px dashed #8B4513; padding: 16px; }
+    footer { background: #2a1800; color: #c9a96e; padding: 16px 32px; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER : introductory content of the page -->
+  <header>
+    <h1>LipiSutra</h1>
+    <p>Reading what history almost forgot.</p>
+  </header>
+
+  <!-- NAV : primary navigation landmark -->
+  <nav>
+    <ul>
+      <li><a href="#scanner">AI Scanner</a></li>
+      <li><a href="#archive">Archives</a></li>
+      <li><a href="#roles">Roles</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+
+  <!-- MAIN : the single primary content region -->
+  <main>
+
+    <!-- SECTION : groups related articles under one topic -->
+    <section id="scanner">
+      <h2>How the Decoder Works</h2>
+
+      <!-- ARTICLE : self-contained, independently meaningful -->
+      <article>
+        <h3>Agent 1 - OCR and Transliteration</h3>
+        <p>
+          The uploaded artifact is passed to a vision model that detects the script
+          and produces a literal transliteration of every clearly visible glyph.
+        </p>
+      </article>
+
+      <article>
+        <h3>Agent 2 - Gap Filling and Translation</h3>
+        <p>
+          Torn and faded regions are reconstructed from context, then the restored
+          text is rendered into modern Marathi and summarised in English.
+        </p>
+      </article>
+    </section>
+
+    <section id="roles">
+      <h2>Platform Roles</h2>
+
+      <!-- FIGURE / FIGCAPTION : illustration with its caption -->
+      <figure>
+        <img src="hero.png" alt="Historian reviewing a decoded manuscript" width="380">
+        <figcaption>Figure 1: The historian verification workspace.</figcaption>
+      </figure>
+
+      <article>
+        <h3>Public, Historian and Museum Admin</h3>
+        <p>
+          A reader uploads and reads. A historian corrects and verifies. An
+          administrator monitors the digitization statistics of the collection.
+        </p>
+      </article>
+    </section>
+
+    <!-- ASIDE : secondary content, related but not essential -->
+    <aside id="about">
+      <h3>Did you know?</h3>
+      <p>
+        The Modi script was the administrative hand of the Maratha empire and is
+        today read fluently by only a few hundred people.
+      </p>
+    </aside>
+
+  </main>
+
+  <!-- FOOTER : closing information for the document -->
+  <footer>
+    <p>&copy; 2026 LipiSutra &middot; Department of Computer Engineering, KBTCOE Nashik.</p>
+    <address>Contact: team@lipisutra.example</address>
+  </footer>
+
+</body>
+</html>
